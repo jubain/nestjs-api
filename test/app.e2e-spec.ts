@@ -3,26 +3,22 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import * as pactum from 'pactum';
 import { AppModule } from '../src/app.module';
-import { AuthDto } from '../src/auth/dto';
-import {
-  CreateBookmarkDto,
-  EditBookmarkDto,
-} from '../src/bookmark/dto';
 import { PrismaService } from '../src/prisma/prisma.service';
-import { EditUserDto } from '../src/user/dto';
+import * as pactum from 'pactum';
+import { AuthDto } from 'src/auth/dto';
+import { EditUserDto } from 'src/user/dto';
+import { CreateBookmarkDto } from 'src/bookmark/dto';
 
 describe('App e2e', () => {
   let app: INestApplication;
   let prisma: PrismaService;
-
   beforeAll(async () => {
     const moduleRef =
       await Test.createTestingModule({
         imports: [AppModule],
       }).compile();
-
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars, prefer-const
     app = moduleRef.createNestApplication();
     app.useGlobalPipes(
       new ValidationPipe({
@@ -31,7 +27,6 @@ describe('App e2e', () => {
     );
     await app.init();
     await app.listen(3333);
-
     prisma = app.get(PrismaService);
     await prisma.cleanDb();
     pactum.request.setBaseUrl(
@@ -42,38 +37,27 @@ describe('App e2e', () => {
   afterAll(() => {
     app.close();
   });
-
   describe('Auth', () => {
     const dto: AuthDto = {
-      email: 'vlad@gmail.com',
-      password: '123',
+      email: 'test@email.com',
+      password: 'Password',
     };
-    describe('Signup', () => {
-      it('should throw if email empty', () => {
+
+    describe('Register', () => {
+      it('should throw error if email not given', () => {
         return pactum
           .spec()
           .post('/auth/signup')
-          .withBody({
-            password: dto.password,
-          })
+          .withBody({ password: dto.password })
           .expectStatus(400);
       });
-      it('should throw if password empty', () => {
-        return pactum
-          .spec()
-          .post('/auth/signup')
-          .withBody({
-            email: dto.email,
-          })
-          .expectStatus(400);
-      });
-      it('should throw if no body provided', () => {
+      it('should throw error if no body', () => {
         return pactum
           .spec()
           .post('/auth/signup')
           .expectStatus(400);
       });
-      it('should signup', () => {
+      it('should sign up', () => {
         return pactum
           .spec()
           .post('/auth/signup')
@@ -81,33 +65,21 @@ describe('App e2e', () => {
           .expectStatus(201);
       });
     });
-
-    describe('Signin', () => {
-      it('should throw if email empty', () => {
+    describe('Login', () => {
+      it('should throw error if email not given', () => {
         return pactum
           .spec()
           .post('/auth/signin')
-          .withBody({
-            password: dto.password,
-          })
+          .withBody({ password: dto.password })
           .expectStatus(400);
       });
-      it('should throw if password empty', () => {
-        return pactum
-          .spec()
-          .post('/auth/signin')
-          .withBody({
-            email: dto.email,
-          })
-          .expectStatus(400);
-      });
-      it('should throw if no body provided', () => {
+      it('should throw error if no body', () => {
         return pactum
           .spec()
           .post('/auth/signin')
           .expectStatus(400);
       });
-      it('should signin', () => {
+      it('should sign in', () => {
         return pactum
           .spec()
           .post('/auth/signin')
@@ -117,7 +89,6 @@ describe('App e2e', () => {
       });
     });
   });
-
   describe('User', () => {
     describe('Get me', () => {
       it('should get current user', () => {
@@ -130,13 +101,13 @@ describe('App e2e', () => {
           .expectStatus(200);
       });
     });
-
-    describe('Edit user', () => {
+    describe('Edit User', () => {
+      const dto: EditUserDto = {
+        email: 'Json@emailss.com',
+        firstName: 'Json',
+        lastName: 'XML',
+      };
       it('should edit user', () => {
-        const dto: EditUserDto = {
-          firstName: 'Vladimir',
-          email: 'vlad@codewithvlad.com',
-        };
         return pactum
           .spec()
           .patch('/users')
@@ -150,26 +121,24 @@ describe('App e2e', () => {
       });
     });
   });
-
   describe('Bookmarks', () => {
-    describe('Get empty bookmarks', () => {
-      it('should get bookmarks', () => {
-        return pactum
-          .spec()
-          .get('/bookmarks')
-          .withHeaders({
-            Authorization: 'Bearer $S{userAt}',
-          })
-          .expectStatus(200)
-          .expectBody([]);
-      });
-    });
-
-    describe('Create bookmark', () => {
-      const dto: CreateBookmarkDto = {
-        title: 'First Bookmark',
-        link: 'https://www.youtube.com/watch?v=d6WC5n9G_sM',
-      };
+    const dto: CreateBookmarkDto = {
+      title: 'First Bookmark',
+      link: 'https://docs.nestjs.com/custom-decorators',
+    };
+    // describe('Get empty', () => {
+    //   it('should get bookmarks', () => {
+    //     return pactum
+    //       .spec()
+    //       .get('/bookmarks')
+    //       .withHeaders({
+    //         Authorization: 'Bearer $S{userAt}',
+    //       })
+    //       .expectStatus(200)
+    //       .expectBody([]);
+    //   });
+    // });
+    describe('Create', () => {
       it('should create bookmark', () => {
         return pactum
           .spec()
@@ -178,82 +147,12 @@ describe('App e2e', () => {
             Authorization: 'Bearer $S{userAt}',
           })
           .withBody(dto)
-          .expectStatus(201)
-          .stores('bookmarkId', 'id');
+          .expectStatus(201);
       });
     });
-
-    describe('Get bookmarks', () => {
-      it('should get bookmarks', () => {
-        return pactum
-          .spec()
-          .get('/bookmarks')
-          .withHeaders({
-            Authorization: 'Bearer $S{userAt}',
-          })
-          .expectStatus(200)
-          .expectJsonLength(1);
-      });
-    });
-
-    describe('Get bookmark by id', () => {
-      it('should get bookmark by id', () => {
-        return pactum
-          .spec()
-          .get('/bookmarks/{id}')
-          .withPathParams('id', '$S{bookmarkId}')
-          .withHeaders({
-            Authorization: 'Bearer $S{userAt}',
-          })
-          .expectStatus(200)
-          .expectBodyContains('$S{bookmarkId}');
-      });
-    });
-
-    describe('Edit bookmark by id', () => {
-      const dto: EditBookmarkDto = {
-        title:
-          'Kubernetes Course - Full Beginners Tutorial (Containerize Your Apps!)',
-        description:
-          'Learn how to use Kubernetes in this complete course. Kubernetes makes it possible to containerize applications and simplifies app deployment to production.',
-      };
-      it('should edit bookmark', () => {
-        return pactum
-          .spec()
-          .patch('/bookmarks/{id}')
-          .withPathParams('id', '$S{bookmarkId}')
-          .withHeaders({
-            Authorization: 'Bearer $S{userAt}',
-          })
-          .withBody(dto)
-          .expectStatus(200)
-          .expectBodyContains(dto.title)
-          .expectBodyContains(dto.description);
-      });
-    });
-
-    describe('Delete bookmark by id', () => {
-      it('should delete bookmark', () => {
-        return pactum
-          .spec()
-          .delete('/bookmarks/{id}')
-          .withPathParams('id', '$S{bookmarkId}')
-          .withHeaders({
-            Authorization: 'Bearer $S{userAt}',
-          })
-          .expectStatus(204);
-      });
-
-      it('should get empty bookmarks', () => {
-        return pactum
-          .spec()
-          .get('/bookmarks')
-          .withHeaders({
-            Authorization: 'Bearer $S{userAt}',
-          })
-          .expectStatus(200)
-          .expectJsonLength(0);
-      });
-    });
+    describe('Get all', () => {});
+    describe('Get by id', () => {});
+    describe('Edit', () => {});
+    describe('Delete', () => {});
   });
 });

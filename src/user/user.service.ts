@@ -20,7 +20,6 @@ export class UserService {
     });
 
     delete user.hash;
-
     return user;
   }
 }
